@@ -105,7 +105,7 @@ opsi_bahasa = {
     "Chinese 🇨🇳": "你是一个友好的AI助手。请务必用中文回答。"
 }
 
-# 3. BARIS ATAS: MENU TITIK TIGA (Maskot dihapus)
+# 3. BARIS ATAS: MENU TITIK TIGA
 col_spacer_top, col_menu = st.columns([8.5, 1.5], vertical_alignment="center")
 
 with col_menu:
@@ -137,7 +137,7 @@ for msg in st.session_state.messages:
     elif msg["role"] == "assistant":
         st.markdown(f"<div class='bubble-ai'><b>AI:</b><br>{msg['content']}</div>", unsafe_allow_html=True)
 
-# 5. Fungsi Eksekusi Pengiriman Pesan
+# 5. Fungsi Eksekusi Pengiriman Pesan (Perbaikan Bug Berhasil)
 def kirim_pesan():
     user_text = st.session_state.get("input_box", "").strip()
     if user_text:
@@ -151,7 +151,8 @@ def kirim_pesan():
                 model="llama-3.1-8b-instant",
                 messages=history
             )
-            st.session_state.messages.append({"role": "assistant", "content": completion.choices.message.content})
+            # PERBAIKAN: Menambahkan indeks [0] di bawah ini
+            st.session_state.messages.append({"role": "assistant", "content": completion.choices[0].message.content})
         except Exception as e:
             st.session_state.messages.append({"role": "assistant", "content": f"Gagal memproses: {e}"})
         st.session_state["input_box"] = ""
@@ -160,12 +161,12 @@ def kirim_pesan():
 def set_action(action_name):
     st.session_state.menu_action = action_name
 
-# 6. PANEL KONDISIONAL UNTUK UPLOAD (Akan muncul jika menu diklik)
+# 6. PANEL KONDISIONAL UNTUK UPLOAD
 if st.session_state.menu_action == "gambar":
-    st.file_uploader("🖼️ Pilih file gambar Anda (PNG, JPG):", type=["png", "jpg", "jpeg"])
+    st.file_uploader("🖼 *Pilih file gambar Anda (PNG, JPG):*", type=["png", "jpg", "jpeg"])
     if st.button("❌ Tutup Panel"): set_action(None); st.rerun()
 elif st.session_state.menu_action == "file":
-    st.file_uploader("📄 Pilih berkas dokumen Anda (TXT, PDF):", type=["txt", "pdf"])
+    st.file_uploader("📄 *Pilih berkas dokumen Anda (TXT, PDF):*", type=["txt", "pdf"])
     if st.button("❌ Tutup Panel"): set_action(None); st.rerun()
 elif st.session_state.menu_action == "buat_gambar":
     st.info("🎨 Fitur Pembuatan Gambar Diaktifkan!")
@@ -177,8 +178,7 @@ col_popover, col_input, col_send = st.columns([1.5, 7, 1.5], vertical_alignment=
 
 with col_popover:
     with st.popover("➕"):
-        # Tampilan menu persis seperti pada gambar rujukan Anda
-        st.button("🖼️ Upload gambar", use_container_width=True, on_click=set_action, args=("gambar",))
+        st.button("📸 Upload gambar", use_container_width=True, on_click=set_action, args=("gambar",))
         st.button("📎 Upload file", use_container_width=True, on_click=set_action, args=("file",))
         
         st.caption("Alat")
