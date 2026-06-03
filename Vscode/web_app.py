@@ -9,7 +9,7 @@ st.set_page_config(page_title="AI Chat UI Premium", layout="centered")
 api_key = os.environ.get("GROQ_API_KEY")
 client = Groq(api_key=api_key)
 
-# 2. Gaya CSS Kustom (Efek Cahaya Bergerak, Bubble Chat, & Teks Pembuka Tengah)
+# 2. Gaya CSS Kustom (Efek Cahaya, Bubble Chat, Menyembunyikan Kotak Upload)
 st.markdown("""
     <style>
     html, body, [data-testid="stAppViewContainer"] {
@@ -21,7 +21,7 @@ st.markdown("""
         display: flex;
         justify-content: center;
         align-items: center;
-        height: 35vh; /* Mengatur tinggi wadah agar posisi teks proporsional */
+        height: 35vh;
         text-align: center;
         margin-bottom: 20px;
     }
@@ -33,6 +33,15 @@ st.markdown("""
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
         line-height: 1.4;
+    }
+    
+    /* Sembunyikan Kotak UI Upload Bawaan Streamlit agar langsung memicu folder saja */
+    div[data-testid="stFileUploader"] section {
+        display: none !important;
+    }
+    div[data-testid="stFileUploader"] {
+        padding: 0 !important;
+        margin: 0 !important;
     }
     
     /* Tombol Popover Aksi (+) */
@@ -54,7 +63,6 @@ st.markdown("""
         100% { border-color: #ff4fac; box-shadow: 0 0 10px rgba(255, 79, 172, 0.5); }
     }
 
-    /* Menerapkan animasi cahaya bergerak pada kotak input teks */
     div[data-testid="stTextInput"] input {
         border-radius: 20px !important;
         height: 46px !important;
@@ -63,7 +71,7 @@ st.markdown("""
         transition: all 0.3s ease;
     }
 
-    /* Tombol Kirim Bundar Tanda Panah (⬆) di Kanan */
+    /* Tombol Kirim Tanda Panah (⬆) */
     div.stButton > button[key="send_btn"] {
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         color: white !important;
@@ -82,7 +90,7 @@ st.markdown("""
         box-shadow: 0px 4px 10px rgba(118, 75, 162, 0.2);
     }
 
-    /* Kustomisasi gaya tombol di dalam Popover */
+    /* Kustomisasi tombol menu dalam Popover */
     div[data-testid="stPopover"] div.stButton > button {
         text-align: left !important;
         justify-content: flex-start !important;
@@ -100,7 +108,6 @@ st.markdown("""
         background-color: #f5f5f5 !important;
     }
     
-    /* Tombol Hapus Chat khusus warna merah */
     div[data-testid="stPopover"] div.stButton > button[key="inner_clear_btn"] {
         color: #ff4b4b !important;
         font-weight: bold !important;
@@ -109,7 +116,6 @@ st.markdown("""
         background-color: #ffebe8 !important;
     }
 
-    /* Bubble Chat User */
     .bubble-user {
         background-color: #f0f4f9;
         padding: 14px 18px;
@@ -120,7 +126,6 @@ st.markdown("""
         color: #202124;
     }
 
-    /* Bubble Chat AI */
     .bubble-ai {
         background-color: #ffffff;
         padding: 14px 18px;
@@ -133,7 +138,7 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# Kamus bahasa beserta instruksi sistem untuk AI
+# Kamus pilihan bahasa
 opsi_bahasa = {
     "Bahasa Indonesia 🇮🇩": "Anda adalah asisten AI ramah yang wajib menjawab dalam Bahasa Indonesia.",
     "English 🇺🇸": "You are a helpful AI assistant. You must respond strictly in English.",
@@ -150,14 +155,13 @@ if "menu_action" not in st.session_state:
 if "bahasa_sekarang" not in st.session_state:
     st.session_state.bahasa_sekarang = "Bahasa Indonesia 🇮🇩"
 
-# 4. LOGIKA TAMPILAN (Jika chat kosong, tampilkan sapaan baru Anda di tengah)
+# 4. LOGIKA TAMPILAN KONTEN CHAT / SAPAAN TENGAH
 if not st.session_state.messages:
     st.markdown(
         '<div class="welcome-container"><h1 class="welcome-text">Halo, apa ada hal yang bisa dibantu?</h1></div>', 
         unsafe_allow_html=True
     )
 else:
-    # Menampilkan Riwayat Chat Ke Layar jika sudah terisi percakapan
     for msg in st.session_state.messages:
         if msg["role"] == "user":
             st.markdown(f"<div class='bubble-user'><b>Anda:</b><br>{msg['content']}</div>", unsafe_allow_html=True)
@@ -167,8 +171,16 @@ else:
 # 5. Fungsi Eksekusi Pengiriman Pesan
 def kirim_pesan():
     user_text = st.session_state.get("input_box", "").strip()
-    if user_text:
-        st.session_state.messages.append({"role": "user", "content": user_text})
+    
+    # Kumpulkan lampiran tersembunyi jika ada yang berhasil diunggah
+    lampiran_konteks = ""
+    if st.session_state.get("hidden_img"):
+        lampiran_konteks += f" [*Menerima lampiran gambar: {st.session_state.hidden_img.name}*]"
+    if st.session_state.get("hidden_file"):
+        lampiran_konteks += f" [*Menerima lampiran dokumen: {st.session_state.hidden_file.name}*]"
+
+    if user_text or lampiran_konteks:
+        st.session_state.messages.append({"role": "user", "content": user_text + lampiran_konteks})
         try:
             system_instruction = opsi_bahasa[st.session_state.bahasa_sekarang]
             history = [{"role": "system", "content": system_instruction}]
@@ -181,21 +193,23 @@ def kirim_pesan():
             st.session_state.messages.append({"role": "assistant", "content": completion.choices[0].message.content})
         except Exception as e:
             st.session_state.messages.append({"role": "assistant", "content": f"Gagal memproses: {e}"})
+        
+        # Reset input setelah terkirim
         st.session_state["input_box"] = ""
 
 def set_action(action_name):
     st.session_state.menu_action = action_name
 
-# 6. PANEL KONDISIONAL UNTUK UPLOAD
-if st.session_state.menu_action == "gambar":
-    st.file_uploader("🖼️ Pilih file gambar Anda (PNG, JPG):", type=["png", "jpg", "jpeg"])
-    if st.button("❌ Tutup Panel"): set_action(None); st.rerun()
-elif st.session_state.menu_action == "file":
-    st.file_uploader("📄 Pilih berkas dokumen Anda (TXT, PDF):", type=["txt", "pdf"])
-    if st.button("❌ Tutup Panel"): set_action(None); st.rerun()
-elif st.session_state.menu_action == "buat_gambar":
-    st.info("🎨 Fitur Pembuatan Gambar Diaktifkan!")
-    if st.button("❌ Tutup Panel"): set_action(None); st.rerun()
+# 6. PENAMPUNG PROSES UPLOAD TERSEMBUNYI (TIDAK TERLIHAT DI UI)
+# Peletakan elemen ini mendeteksi perubahan unggahan di latar belakang halaman
+uploaded_img = st.file_uploader("", type=["png", "jpg", "jpeg"], key="hidden_img", label_visibility="collapsed")
+uploaded_txt = st.file_uploader("", type=["txt", "pdf"], key="hidden_file", label_visibility="collapsed")
+
+# Memunculkan notifikasi kecil (toast) jika berkas masuk lewat background folder
+if uploaded_img:
+    st.toast(f"📸 Gambar '{uploaded_img.name}' siap dikirim!")
+if uploaded_txt:
+    st.toast(f"📎 Dokumen '{uploaded_txt.name}' siap dikirim!")
 
 # 7. BARIS BAWAH MINIMALIS (3 Kolom: ➕ | Input Chat | ⬆)
 st.write("") 
@@ -204,8 +218,10 @@ col_plus, col_input, col_send = st.columns([1.3, 7.4, 1.3], vertical_alignment="
 with col_plus:
     with st.popover("➕"):
         st.caption("📎 **Upload & Lampiran**")
-        st.button("📸 Upload gambar", use_container_width=True, on_click=set_action, args=("gambar",))
-        st.button("📎 Upload file", use_container_width=True, on_click=set_action, args=("file",))
+        
+        # Memicu pemilih dokumen secara native (HTML) lewat integrasi trik label pengunggah berkas
+        st.markdown('<label for="hidden_img-uploader" style="cursor:pointer; display:block; padding:8px 12px; border-radius:8px; font-size:15px; color:#333333;">📸 Upload gambar</label>', unsafe_allow_html=True)
+        st.markdown('<label for="hidden_file-uploader" style="cursor:pointer; display:block; padding:8px 12px; border-radius:8px; font-size:15px; color:#333333;">📎 Upload file</label>', unsafe_allow_html=True)
         
         st.divider()
         st.caption("🤖 **Alat AI**")
