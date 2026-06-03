@@ -2,179 +2,183 @@ import os
 import streamlit as st
 from groq import Groq
 
-# Ganti baris inisialisasi API Key kamu menjadi seperti ini:
+# Inisialisasi Groq Client
 api_key = os.environ.get("GROQ_API_KEY")
 client = Groq(api_key=api_key)
 
-# 1. Pengaturan Halaman Utama
-st.set_page_config(page_title="Asisten AI Premium", page_icon="🤖", layout="centered")
+# 1. Konfigurasi Halaman Utama
+st.set_page_config(page_title="AI Chat UI Premium", layout="centered")
 
-# 2. Desain Tampilan Cerah & Bersih (Light Theme)
+# 2. Gaya CSS Kustom (Bersih & Modern)
 st.markdown("""
     <style>
-    /* Background Gambar Hokkaido */
-    .stApp {
-        background-image: url("https://i.pinimg.com/1200x/eb/70/5d/eb705dc1184fe975d8fa496121dcecdb.jpg");
-        background-size: cover;
-        background-position: center;
-        background-attachment: fixed;
+    html, body, [data-testid="stAppViewContainer"] {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     }
     
-    /* Overlay Putih Transparan (Cerah & Bersih) */
-    .block-container {
-        background-color: rgba(255, 255, 255, 0.94);
-        padding: 40px !important;
-        border-radius: 20px;
-        box-shadow: 0px 10px 30px rgba(0, 0, 0, 0.15);
-        margin-top: 30px;
-    }
-    
-    h1 {
-        color: #1e3c72;
-        font-weight: bold;
-        text-align: center;
-        margin-bottom: 5px;
-    }
-    
-    .marquee-text {
-        font-weight: bold;
-        color: #d9534f;
-        font-size: 16px;
-    }
-
-    /* Gaya Bubble Chat Gaya WhatsApp/ChatGPT */
-    .chat-bubble-user {
-        background-color: #e2f0cb;
-        color: #111111 !important;
-        padding: 12px 18px;
-        border-radius: 15px 15px 0px 15px;
-        margin-bottom: 15px;
-        text-align: right;
-        max-width: 80%;
-        margin-left: auto;
-        box-shadow: 0px 2px 5px rgba(0,0,0,0.05);
-    }
-    
-    .chat-bubble-ai {
-        background-color: #f1f3f5;
-        color: #111111 !important;
-        padding: 12px 18px;
-        border-radius: 15px 15px 15px 0px;
-        margin-bottom: 15px;
-        text-align: left;
-        max-width: 80%;
-        margin-right: auto;
-        border-left: 4px solid #4facfe;
-        box-shadow: 0px 2px 5px rgba(0,0,0,0.05);
-    }
-
-    /* Kustomisasi Tombol "+" */
-    div.stButton > button[key="plus_btn"] {
-        border-radius: 10px !important;
+    /* Tombol Popover Alat Melayang */
+    div[data-testid="stPopover"] > button {
+        border-radius: 20px !important;
         background-color: #ffffff !important;
         color: #333333 !important;
-        border: 1px solid #ccc !important;
-        height: 45px;
-        width: 45px;
+        border: 1px solid #e0e0e0 !important;
+        height: 46px;
+        width: 100%;
+        box-shadow: 0px 2px 8px rgba(0,0,0,0.05);
+    }
+    
+    /* Kotak Input Teks */
+    div[data-testid="stTextInput"] input {
+        border-radius: 20px !important;
+        height: 46px !important;
+        border: 1px solid #e0e0e0 !important;
+        box-shadow: 0px 2px 8px rgba(0,0,0,0.05);
     }
 
-    /* Kustomisasi Tombol Kirim Utama */
-    div.stButton > button:not([key="plus_btn"]) {
-        background: linear-gradient(45deg, #00f2fe 0%, #4facfe 100%);
+    /* Tombol Kirim Bundar */
+    div.stButton > button[key="send_btn"] {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         color: white !important;
-        font-size: 16px;
         font-weight: bold;
-        padding: 10px 20px;
-        border-radius: 25px;
+        border-radius: 20px;
         border: none;
-        box-shadow: 0px 4px 15px rgba(0, 242, 254, 0.2);
-        transition: all 0.3s ease-in-out;
+        height: 46px;
         width: 100%;
-        height: 45px;
+        box-shadow: 0px 4px 10px rgba(118, 75, 162, 0.2);
+    }
+
+    /* Bubble Chat User */
+    .bubble-user {
+        background-color: #f0f4f9;
+        padding: 14px 18px;
+        border-radius: 18px 18px 0px 18px;
+        margin-bottom: 12px;
+        max-width: 85%;
+        margin-left: auto;
+        color: #202124;
+    }
+
+    /* Bubble Chat AI */
+    .bubble-ai {
+        background-color: #ffffff;
+        padding: 14px 18px;
+        border-radius: 18px 18px 18px 0px;
+        margin-bottom: 12px;
+        max-width: 85%;
+        border: 1px solid #e3e3e3;
+        color: #202124;
+    }
+    
+    /* Tombol Hapus Chat Merah */
+    div.stButton > button[key="clear_btn"] {
+        background-color: #ff4b4b !important;
+        color: white !important;
+        border-radius: 10px;
+        border: none;
+        width: 100%;
     }
     </style>
 """, unsafe_allow_html=True)
 
-# 3. Judul Aplikasi & Teks Berjalan
-st.title("🤖 Aplikasi Chat AI Premium")
-st.markdown('<marquee class="marquee-text">Selamat datang di Aplikasi AI Berkelanjutan! Ketik pertanyaan apa saja dan AI akan mengingat obrolan Anda sebelumnya.</marquee>', unsafe_allow_html=True)
+# 3. Baris Navigasi Atas & Menu Kontrol (Bahasa & Clear Chat)
+st.write("✨ **Mode AI** &nbsp;|&nbsp; Semua &nbsp;|&nbsp; Gambar &nbsp;|&nbsp; Video &nbsp;|&nbsp; Berita &nbsp;|&nbsp; Lainnya")
+st.divider()
 
-# 4. Inisialisasi Memori Riwayat Chat
-if "messages" not in st.session_state:
-    st.session_state.messages = []
+# Pembagian kolom untuk Pengaturan Bahasa dan Tombol Hapus Chat
+col_lang, col_clear = st.columns([7, 3], vertical_alignment="center")
 
-# Menampilkan semua riwayat chat dari memori ke layar
-for msg in st.session_state.messages:
-    if msg["role"] == "user":
-        st.markdown(f"<div class='chat-bubble-user'><b>Anda:</b><br>{msg['content']}</div>", unsafe_allow_html=True)
-    elif msg["role"] == "assistant":
-        st.markdown(f"<div class='chat-bubble-ai'><b>AI:</b><br>{msg['content']}</div>", unsafe_allow_html=True)
+with col_lang:
+    # Kamus bahasa beserta instruksi sistem untuk AI
+    opsi_bahasa = {
+        "Bahasa Indonesia 🇮🇩": "Anda adalah asisten AI ramah yang wajib menjawab dalam Bahasa Indonesia.",
+        "English 🇺🇸": "You are a helpful AI assistant. You must respond strictly in English.",
+        "Japanese 🇯🇵": "あなたは親切なAIアシスタントです。必ず日本語で答えてください。",
+        "Korean 🇰🇷": "당신은 친절한 AI 어시스턴트입니다. 반드시 한국어로 답변해 주세요.",
+        "Chinese 🇨🇳": "你是一个友好的AI助手。请务必用中文回答。"
+    }
+    
+    bahasa_terpilih = st.selectbox(
+        "🌐 Pilih Bahasa Respon AI:",
+        options=list(opsi_bahasa.keys()),
+        label_visibility="collapsed"
+    )
+
+with col_clear:
+    # Aksi tombol hapus riwayat obrolan
+    if st.button("🗑️ Hapus Chat", key="clear_btn"):
+        st.session_state.messages = []
+        if "img_upload" in st.session_state:
+            del st.session_state["img_upload"]
+        if "file_upload" in st.session_state:
+            del st.session_state["file_upload"]
+        st.rerun()
 
 st.write("---")
 
-# 5. Fungsi Callback untuk Menghapus Kolom Input Otomatis setelah Kirim
-def proses_kirim():
-    # Mengambil teks pertanyaan dari state input_box
-    pertanyaan_user = st.session_state.input_box
-    
-    if pertanyaan_user.strip() != "":
-        # Membaca isi file jika ada lampiran teks
-        konteks_file = ""
-        if st.session_state.get('file_uploader_key') is not None:
-            file_konten = st.session_state.file_uploader_key
-            konteks_file = f"\n\n[Isi file lampiran: {file_konten.read().decode('utf-8')}]"
+# 4. Inisialisasi Memori Percakapan
+if "messages" not in st.session_state:
+    st.session_state.messages = []
 
-        # Simpan pertanyaan ke memori chat
-        st.session_state.messages.append({"role": "user", "content": pertanyaan_user + konteks_file})
+# Menampilkan Riwayat Chat Ke Layar
+for msg in st.session_state.messages:
+    if msg["role"] == "user":
+        st.markdown(f"<div class='bubble-user'><b>Anda:</b><br>{msg['content']}</div>", unsafe_allow_html=True)
+    elif msg["role"] == "assistant":
+        st.markdown(f"<div class='bubble-ai'><b>AI:</b><br>{msg['content']}</div>", unsafe_allow_html=True)
 
+# 5. Fungsi Eksekusi Pengiriman Pesan
+def kirim_pesan():
+    user_text = st.session_state.get("input_box", "").strip()
+    if user_text:
+        # Menambahkan konteks lampiran berkas jika diunggah pengguna
+        context = ""
+        if st.session_state.get("file_upload"):
+            context += f"\n\n[File teks terlampir: {st.session_state.file_upload.name}]"
+        if st.session_state.get("img_upload"):
+            context += f"\n\n[*Mengunggah foto: {st.session_state.img_upload.name}*]"
+            
+        st.session_state.messages.append({"role": "user", "content": user_text + context})
+        
         try:
-            # Ambil respons dari Groq AI
-            payload_pesan = [{"role": "system", "content": "Anda adalah asisten AI ramah yang menjawab dalam bahasa Indonesia."}]
-            payload_pesan.extend(st.session_state.messages)
-
-            respons = client.chat.completions.create(
-                model="llama-3.1-8b-instant", 
-                messages=payload_pesan
+            # Mengambil sistem instruksi bahasa dinamis berdasarkan pilihan dropdown
+            system_instruction = opsi_bahasa[bahasa_terpilih]
+            
+            history = [{"role": "system", "content": system_instruction}]
+            history.extend([{"role": m["role"], "content": m["content"]} for m in st.session_state.messages])
+            
+            completion = client.chat.completions.create(
+                model="llama-3.1-8b-instant",
+                messages=history
             )
-            
-            # Memperbaiki pembacaan indeks list model Groq
-            jawaban_ai = respons.choices[0].message.content
-            
-            # Simpan jawaban AI ke memori chat
-            st.session_state.messages.append({"role": "assistant", "content": jawaban_ai})
-
+            st.session_state.messages.append({"role": "assistant", "content": completion.choices.message.content})
         except Exception as e:
-            st.session_state.messages.append({"role": "assistant", "content": f"Terjadi kesalahan sistem: {e}"})
-            
-    # PENTING: Mengosongkan teks di kotak input secara otomatis setelah proses selesai
-    st.session_state.input_box = ""
+            st.session_state.messages.append({"role": "assistant", "content": f"Gagal memproses: {e}"})
+        
+        # Bersihkan kotak teks setelah terkirim
+        st.session_state["input_box"] = ""
 
-# 6. BARIS INPUT MODERN
-if "status_upload" not in st.session_state:
-    st.session_state.status_upload = False
+# 6. Baris Menu Aksi & Kotak Input Bawah
+st.write("") 
+col_popover, col_input, col_send = st.columns([1.5, 7, 1.5], vertical_alignment="bottom")
 
-col_plus, col_txt, col_send = st.columns([1, 8, 2])
+with col_popover:
+    with st.popover("➕"):
+        st.caption("📂 **Lampiran & Alat**")
+        st.file_uploader("🖼️ Upload gambar", type=["png", "jpg", "jpeg"], key="img_upload")
+        st.file_uploader("📄 Upload file", type=["txt", "pdf"], key="file_upload")
+        
+        st.divider()
+        if st.button("🎨 Buat gambar", use_container_width=True):
+            st.toast("Fitur pembuatan gambar siap dikonfigurasi!")
 
-with col_plus:
-    buka_upload = st.button("➕", key="plus_btn", help="Klik untuk unggah file/foto")
-    if buka_upload:
-        st.session_state.status_upload = not st.session_state.status_upload
-
-with col_txt:
-    st.text_input("", placeholder="Tanyakan apa saja ke AI...", key="input_box", label_visibility="collapsed")
+with col_input:
+    st.text_input(
+        "", 
+        placeholder="Tanya AI...", 
+        key="input_box", 
+        label_visibility="collapsed",
+        on_change=kirim_pesan
+    )
 
 with col_send:
-    # Tombol kirim memicu fungsi callback yang sama
-    st.button("Kirim 🚀", on_click=proses_kirim)
-
-# 7. Panel Tempat Mengunggah File
-if st.session_state.status_upload:
-    st.markdown("<div style='background-color: #f1f3f5; padding: 15px; border-radius: 15px; border: 1px dashed #4facfe; margin-top: 10px; margin-bottom: 10px;'>", unsafe_allow_html=True)
-    c1, c2 = st.columns(2)
-    with c1:
-        foto_diunggah = st.file_uploader("📸 Tambah Foto", type=["png", "jpg", "jpeg"])
-        if foto_diunggah:
-            st.image(foto_diunggah, width=100)
-    with c2:
-        st.file_uploader("📁 Tambah File Teks (TXT)", type=["txt"], key="file_uploader_key")
-    st.markdown("</div>", unsafe_allow_html=True)
+    st.button("🚀", key="send_btn", on_click=kirim_pesan)
