@@ -9,14 +9,14 @@ client = Groq(api_key=api_key)
 # 1. Konfigurasi Halaman Utama
 st.set_page_config(page_title="AI Chat UI Premium", layout="centered")
 
-# 2. Gaya CSS Kustom (Bersih & Modern)
+# 2. Gaya CSS Kustom (Desain Bersih & Elemen Presisi)
 st.markdown("""
     <style>
     html, body, [data-testid="stAppViewContainer"] {
         font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     }
     
-    /* Tombol Popover Alat Melayang */
+    /* Tombol Popover Alat Melayang (+) dan Menu Titik Tiga (⋮) */
     div[data-testid="stPopover"] > button {
         border-radius: 20px !important;
         background-color: #ffffff !important;
@@ -25,6 +25,14 @@ st.markdown("""
         height: 46px;
         width: 100%;
         box-shadow: 0px 2px 8px rgba(0,0,0,0.05);
+    }
+    
+    /* Khusus untuk Menghilangkan Border Default pada Tombol Titik Tiga Transparan */
+    div[data-testid="element-container"] .titik-tiga-container button {
+        border: none !important;
+        background: transparent !important;
+        font-size: 24px !important;
+        box-shadow: none !important;
     }
     
     /* Kotak Input Teks */
@@ -68,52 +76,45 @@ st.markdown("""
         border: 1px solid #e3e3e3;
         color: #202124;
     }
-    
-    /* Tombol Hapus Chat Merah */
-    div.stButton > button[key="clear_btn"] {
-        background-color: #ff4b4b !important;
-        color: white !important;
-        border-radius: 10px;
-        border: none;
-        width: 100%;
-    }
     </style>
 """, unsafe_allow_html=True)
 
-# 3. Baris Navigasi Atas & Menu Kontrol (Bahasa & Clear Chat)
-st.write("✨ **Mode AI** &nbsp;|&nbsp; Semua &nbsp;|&nbsp; Gambar &nbsp;|&nbsp; Video &nbsp;|&nbsp; Berita &nbsp;|&nbsp; Lainnya")
+# Kamus bahasa beserta instruksi sistem untuk AI
+opsi_bahasa = {
+    "Bahasa Indonesia 🇮🇩": "Anda adalah asisten AI ramah yang wajib menjawab dalam Bahasa Indonesia.",
+    "English 🇺🇸": "You are a helpful AI assistant. You must respond strictly in English.",
+    "Japanese 🇯🇵": "あなたは親切なAIアシスタントです。必ず日本語で答えてください。",
+    "Korean 🇰🇷": "당신은 친절한 AI 어시스턴트입니다. 반드시 한국어로 답변해 주세요.",
+    "Chinese 🇨🇳": "你是一个友好的AI助手。请务必用中文回答。"
+}
+
+# 3. Baris Navigasi Atas & Menu Titik Tiga (⋮)
+col_nav, col_menu = st.columns([8.5, 1.5], vertical_alignment="center")
+
+with col_nav:
+    st.write("✨ **Mode AI** &nbsp;|&nbsp; Semua &nbsp;|&nbsp; Gambar &nbsp;|&nbsp; Video &nbsp;|&nbsp; Berita &nbsp;|&nbsp; Lainnya")
+
+with col_menu:
+    # Menu Popover Titik Tiga di Pojok Kanan Atas
+    with st.popover("⋮"):
+        st.caption("🌐 **Pengaturan Bahasa**")
+        bahasa_terpilih = st.selectbox(
+            "Pilih Bahasa:",
+            options=list(opsi_bahasa.keys()),
+            label_visibility="collapsed"
+        )
+        
+        st.divider()
+        st.caption("⚙️ **Aksi Obrolan**")
+        if st.button("🗑️ Hapus Chat", use_container_width=True):
+            st.session_state.messages = []
+            if "img_upload" in st.session_state:
+                del st.session_state["img_upload"]
+            if "file_upload" in st.session_state:
+                del st.session_state["file_upload"]
+            st.rerun()
+
 st.divider()
-
-# Pembagian kolom untuk Pengaturan Bahasa dan Tombol Hapus Chat
-col_lang, col_clear = st.columns([7, 3], vertical_alignment="center")
-
-with col_lang:
-    # Kamus bahasa beserta instruksi sistem untuk AI
-    opsi_bahasa = {
-        "Bahasa Indonesia 🇮🇩": "Anda adalah asisten AI ramah yang wajib menjawab dalam Bahasa Indonesia.",
-        "English 🇺🇸": "You are a helpful AI assistant. You must respond strictly in English.",
-        "Japanese 🇯🇵": "あなたは親切なAIアシスタントです。必ず日本語で答えてください。",
-        "Korean 🇰🇷": "당신은 친절한 AI 어시스턴트입니다. 반드시 한국어로 답변해 주세요.",
-        "Chinese 🇨🇳": "你是一个友好的AI助手。请务必用中文回答。"
-    }
-    
-    bahasa_terpilih = st.selectbox(
-        "🌐 Pilih Bahasa Respon AI:",
-        options=list(opsi_bahasa.keys()),
-        label_visibility="collapsed"
-    )
-
-with col_clear:
-    # Aksi tombol hapus riwayat obrolan
-    if st.button("🗑️ Hapus Chat", key="clear_btn"):
-        st.session_state.messages = []
-        if "img_upload" in st.session_state:
-            del st.session_state["img_upload"]
-        if "file_upload" in st.session_state:
-            del st.session_state["file_upload"]
-        st.rerun()
-
-st.write("---")
 
 # 4. Inisialisasi Memori Percakapan
 if "messages" not in st.session_state:
@@ -130,7 +131,6 @@ for msg in st.session_state.messages:
 def kirim_pesan():
     user_text = st.session_state.get("input_box", "").strip()
     if user_text:
-        # Menambahkan konteks lampiran berkas jika diunggah pengguna
         context = ""
         if st.session_state.get("file_upload"):
             context += f"\n\n[File teks terlampir: {st.session_state.file_upload.name}]"
@@ -140,9 +140,7 @@ def kirim_pesan():
         st.session_state.messages.append({"role": "user", "content": user_text + context})
         
         try:
-            # Mengambil sistem instruksi bahasa dinamis berdasarkan pilihan dropdown
             system_instruction = opsi_bahasa[bahasa_terpilih]
-            
             history = [{"role": "system", "content": system_instruction}]
             history.extend([{"role": m["role"], "content": m["content"]} for m in st.session_state.messages])
             
@@ -150,26 +148,33 @@ def kirim_pesan():
                 model="llama-3.1-8b-instant",
                 messages=history
             )
-            st.session_state.messages.append({"role": "assistant", "content": completion.choices.message.content})
+            st.session_state.messages.append({"role": "assistant", "content": completion.choices[0].message.content})
         except Exception as e:
             st.session_state.messages.append({"role": "assistant", "content": f"Gagal memproses: {e}"})
         
-        # Bersihkan kotak teks setelah terkirim
         st.session_state["input_box"] = ""
 
-# 6. Baris Menu Aksi & Kotak Input Bawah
+# 6. Baris Menu Aksi & Kotak Input Bawah (Desain Presisi Multi-Kategori)
 st.write("") 
 col_popover, col_input, col_send = st.columns([1.5, 7, 1.5], vertical_alignment="bottom")
 
 with col_popover:
     with st.popover("➕"):
-        st.caption("📂 **Lampiran & Alat**")
-        st.file_uploader("🖼️ Upload gambar", type=["png", "jpg", "jpeg"], key="img_upload")
-        st.file_uploader("📄 Upload file", type=["txt", "pdf"], key="file_upload")
+        # KELOMPOK 1: MENU UNGGAH
+        st.caption("📎 **Upload & Lampiran**")
+        st.file_uploader("📂 Upload file teks/dokumen", type=["txt", "pdf"], key="file_upload")
+        st.file_uploader("📸 Upload gambar/foto", type=["png", "jpg", "jpeg"], key="img_upload")
         
         st.divider()
-        if st.button("🎨 Buat gambar", use_container_width=True):
-            st.toast("Fitur pembuatan gambar siap dikonfigurasi!")
+        
+        # KELOMPOK 2: MENU ALAT KREASI
+        st.caption("🤖 **Alat & Kreasi AI**")
+        if st.button("🎨 Buat gambar (Baru)", use_container_width=True):
+            st.toast("Fitur Canvas/Gambar siap dikembangkan!")
+        if st.button("📝 Canvas", use_container_width=True):
+            st.toast("Membuka ruang kerja Canvas...")
+        if st.button("🔍 Deep Research", use_container_width=True):
+            st.toast("Memulai analisis mendalam...")
 
 with col_input:
     st.text_input(
