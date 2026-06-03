@@ -2,18 +2,37 @@ import os
 import streamlit as st
 from groq import Groq
 
+# 1. Konfigurasi Halaman Utama
+st.set_page_config(page_title="AI Chat UI Premium", layout="centered")
+
 # Inisialisasi Groq Client
 api_key = os.environ.get("GROQ_API_KEY")
 client = Groq(api_key=api_key)
 
-# 1. Konfigurasi Halaman Utama
-st.set_page_config(page_title="AI Chat UI Premium", layout="centered")
-
-# 2. Gaya CSS Kustom (Desain Bersih & Kolom Input Luas)
+# 2. Gaya CSS Kustom (Efek Cahaya Bergerak, Bubble Chat, & Teks Pembuka Tengah)
 st.markdown("""
     <style>
     html, body, [data-testid="stAppViewContainer"] {
         font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+    
+    /* GAYA TEKS PEMBUKA DI TENGAH LAYAR */
+    .welcome-container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 35vh; /* Mengatur tinggi wadah agar posisi teks proporsional */
+        text-align: center;
+        margin-bottom: 20px;
+    }
+    .welcome-text {
+        font-size: 34px;
+        font-weight: 500;
+        color: #1f1f1f;
+        background: linear-gradient(45deg, #1e3c72, #2a5298);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        line-height: 1.4;
     }
     
     /* Tombol Popover Aksi (+) */
@@ -63,7 +82,7 @@ st.markdown("""
         box-shadow: 0px 4px 10px rgba(118, 75, 162, 0.2);
     }
 
-    /* Kustomisasi gaya tombol biasa di dalam Popover agar teks rata kiri */
+    /* Kustomisasi gaya tombol di dalam Popover */
     div[data-testid="stPopover"] div.stButton > button {
         text-align: left !important;
         justify-content: flex-start !important;
@@ -81,7 +100,7 @@ st.markdown("""
         background-color: #f5f5f5 !important;
     }
     
-    /* Tombol Hapus Chat khusus warna merah di dalam menu */
+    /* Tombol Hapus Chat khusus warna merah */
     div[data-testid="stPopover"] div.stButton > button[key="inner_clear_btn"] {
         color: #ff4b4b !important;
         font-weight: bold !important;
@@ -131,14 +150,21 @@ if "menu_action" not in st.session_state:
 if "bahasa_sekarang" not in st.session_state:
     st.session_state.bahasa_sekarang = "Bahasa Indonesia 🇮🇩"
 
-# Menampilkan Riwayat Chat Ke Layar
-for msg in st.session_state.messages:
-    if msg["role"] == "user":
-        st.markdown(f"<div class='bubble-user'><b>Anda:</b><br>{msg['content']}</div>", unsafe_allow_html=True)
-    elif msg["role"] == "assistant":
-        st.markdown(f"<div class='bubble-ai'><b>AI:</b><br>{msg['content']}</div>", unsafe_allow_html=True)
+# 4. LOGIKA TAMPILAN (Jika chat kosong, tampilkan sapaan baru Anda di tengah)
+if not st.session_state.messages:
+    st.markdown(
+        '<div class="welcome-container"><h1 class="welcome-text">Halo, apa ada hal yang bisa dibantu?</h1></div>', 
+        unsafe_allow_html=True
+    )
+else:
+    # Menampilkan Riwayat Chat Ke Layar jika sudah terisi percakapan
+    for msg in st.session_state.messages:
+        if msg["role"] == "user":
+            st.markdown(f"<div class='bubble-user'><b>Anda:</b><br>{msg['content']}</div>", unsafe_allow_html=True)
+        elif msg["role"] == "assistant":
+            st.markdown(f"<div class='bubble-ai'><b>AI:</b><br>{msg['content']}</div>", unsafe_allow_html=True)
 
-# 4. Fungsi Eksekusi Pengiriman Pesan
+# 5. Fungsi Eksekusi Pengiriman Pesan
 def kirim_pesan():
     user_text = st.session_state.get("input_box", "").strip()
     if user_text:
@@ -160,7 +186,7 @@ def kirim_pesan():
 def set_action(action_name):
     st.session_state.menu_action = action_name
 
-# 5. PANEL KONDISIONAL UNTUK UPLOAD (Muncul tepat di atas baris chat jika dipicu)
+# 6. PANEL KONDISIONAL UNTUK UPLOAD
 if st.session_state.menu_action == "gambar":
     st.file_uploader("🖼️ Pilih file gambar Anda (PNG, JPG):", type=["png", "jpg", "jpeg"])
     if st.button("❌ Tutup Panel"): set_action(None); st.rerun()
@@ -171,12 +197,11 @@ elif st.session_state.menu_action == "buat_gambar":
     st.info("🎨 Fitur Pembuatan Gambar Diaktifkan!")
     if st.button("❌ Tutup Panel"): set_action(None); st.rerun()
 
-# 6. BARIS BAWAH MINIMALIS (Hanya 3 Kolom: ➕ | Input Chat | ⬆)
+# 7. BARIS BAWAH MINIMALIS (3 Kolom: ➕ | Input Chat | ⬆)
 st.write("") 
 col_plus, col_input, col_send = st.columns([1.3, 7.4, 1.3], vertical_alignment="bottom")
 
 with col_plus:
-    # Seluruh pengaturan dan upload digabung menjadi satu di bawah tombol ini
     with st.popover("➕"):
         st.caption("📎 **Upload & Lampiran**")
         st.button("📸 Upload gambar", use_container_width=True, on_click=set_action, args=("gambar",))
@@ -203,7 +228,6 @@ with col_plus:
             st.rerun()
 
 with col_input:
-    # Kotak Input Teks Luas
     st.text_input(
         "", 
         placeholder="Tanya AI...", 
@@ -213,5 +237,4 @@ with col_input:
     )
                 
 with col_send:
-    # Tombol Panah Kirim Berdiri Sendiri di Ujung Kanan
     st.button("⬆", key="send_btn", on_click=kirim_pesan)
