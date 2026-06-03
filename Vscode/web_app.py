@@ -27,14 +27,6 @@ st.markdown("""
         box-shadow: 0px 2px 8px rgba(0,0,0,0.05);
     }
     
-    /* Khusus untuk Menghilangkan Border Default pada Tombol Titik Tiga Transparan */
-    div[data-testid="element-container"] .titik-tiga-container button {
-        border: none !important;
-        background: transparent !important;
-        font-size: 24px !important;
-        box-shadow: none !important;
-    }
-    
     /* Kotak Input Teks */
     div[data-testid="stTextInput"] input {
         border-radius: 20px !important;
@@ -88,11 +80,13 @@ opsi_bahasa = {
     "Chinese 🇨🇳": "你是一个友好的AI助手。请务必用中文回答。"
 }
 
-# 3. Baris Navigasi Atas & Menu Titik Tiga (⋮)
-col_nav, col_menu = st.columns([8.5, 1.5], vertical_alignment="center")
+# 3. BARIS ATAS: MASKOT BERGERAK & MENU TITIK TIGA
+# Pembagian kolom (kolom 1 untuk maskot kiri, kolom 2 kosong, kolom 3 untuk tombol kanan)
+col_maskot, col_spacer, col_menu = st.columns([1.5, 7, 1.5], vertical_alignment="center")
 
-with col_nav:
-    st.write("✨ **Mode AI** &nbsp;|&nbsp; Semua &nbsp;|&nbsp; Gambar &nbsp;|&nbsp; Video &nbsp;|&nbsp; Berita &nbsp;|&nbsp; Lainnya")
+with col_maskot:
+    # Menggunakan tautan GIF eksternal sebagai maskot bergerak seukuran tombol titik tiga
+    st.image("https://giphy.com", width=46)
 
 with col_menu:
     # Menu Popover Titik Tiga di Pojok Kanan Atas
@@ -154,20 +148,17 @@ def kirim_pesan():
         
         st.session_state["input_box"] = ""
 
-# 6. Baris Menu Aksi & Kotak Input Bawah (Desain Presisi Multi-Kategori)
+# 6. Baris Menu Aksi & Kotak Input Bawah
 st.write("") 
 col_popover, col_input, col_send = st.columns([1.5, 7, 1.5], vertical_alignment="bottom")
 
 with col_popover:
     with st.popover("➕"):
-        # KELOMPOK 1: MENU UNGGAH
         st.caption("📎 **Upload & Lampiran**")
         st.file_uploader("📂 Upload file teks/dokumen", type=["txt", "pdf"], key="file_upload")
         st.file_uploader("📸 Upload gambar/foto", type=["png", "jpg", "jpeg"], key="img_upload")
         
         st.divider()
-        
-        # KELOMPOK 2: MENU ALAT KREASI
         st.caption("🤖 **Alat & Kreasi AI**")
         if st.button("🎨 Buat gambar (Baru)", use_container_width=True):
             st.toast("Fitur Canvas/Gambar siap dikembangkan!")
