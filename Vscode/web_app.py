@@ -9,7 +9,7 @@ client = Groq(api_key=api_key)
 # 1. Konfigurasi Halaman Utama
 st.set_page_config(page_title="AI Chat UI Premium", layout="centered")
 
-# 2. Gaya CSS Kustom (Desain Bersih & Elemen Presisi)
+# 2. Gaya CSS Kustom (Efek Cahaya Bergerak & Tombol Menu Presisi)
 st.markdown("""
     <style>
     html, body, [data-testid="stAppViewContainer"] {
@@ -27,12 +27,21 @@ st.markdown("""
         box-shadow: 0px 2px 8px rgba(0,0,0,0.05);
     }
     
-    /* Kotak Input Teks */
+    /* ANIMASI CAHAYA BERGERAK PADA KOLOM INPUT CHAT */
+    @keyframes borderGlow {
+        0% { border-color: #ff4fac; box-shadow: 0 0 10px rgba(255, 79, 172, 0.5); }
+        33% { border-color: #00f2fe; box-shadow: 0 0 10px rgba(0, 242, 254, 0.5); }
+        66% { border-color: #764ba2; box-shadow: 0 0 10px rgba(118, 75, 162, 0.5); }
+        100% { border-color: #ff4fac; box-shadow: 0 0 10px rgba(255, 79, 172, 0.5); }
+    }
+
+    /* Menerapkan animasi cahaya bergerak pada kotak input teks */
     div[data-testid="stTextInput"] input {
         border-radius: 20px !important;
         height: 46px !important;
-        border: 1px solid #e0e0e0 !important;
-        box-shadow: 0px 2px 8px rgba(0,0,0,0.05);
+        border: 2px solid #e0e0e0 !important;
+        animation: borderGlow 6s linear infinite;
+        transition: all 0.3s ease;
     }
 
     /* Tombol Kirim Bundar */
@@ -45,6 +54,22 @@ st.markdown("""
         height: 46px;
         width: 100%;
         box-shadow: 0px 4px 10px rgba(118, 75, 162, 0.2);
+    }
+
+    /* Kustomisasi gaya tombol di dalam Popover agar teks rata kiri & mirip menu asli */
+    div[data-testid="stPopover"] div.stButton > button {
+        text-align: left !important;
+        justify-content: flex-start !important;
+        border: none !important;
+        background: transparent !important;
+        padding: 8px 12px !important;
+        font-size: 15px !important;
+        color: #333333 !important;
+        box-shadow: none !important;
+        border-radius: 8px !important;
+    }
+    div[data-testid="stPopover"] div.stButton > button:hover {
+        background-color: #f5f5f5 !important;
     }
 
     /* Bubble Chat User */
@@ -80,16 +105,10 @@ opsi_bahasa = {
     "Chinese 🇨🇳": "你是一个友好的AI助手。请务必用中文回答。"
 }
 
-# 3. BARIS ATAS: MASKOT BERGERAK & MENU TITIK TIGA
-# Pembagian kolom (kolom 1 untuk maskot kiri, kolom 2 kosong, kolom 3 untuk tombol kanan)
-col_maskot, col_spacer, col_menu = st.columns([1.5, 7, 1.5], vertical_alignment="center")
-
-with col_maskot:
-    # Menggunakan tautan GIF eksternal sebagai maskot bergerak seukuran tombol titik tiga
-    st.image("https://giphy.com", width=46)
+# 3. BARIS ATAS: MENU TITIK TIGA (Maskot dihapus)
+col_spacer_top, col_menu = st.columns([8.5, 1.5], vertical_alignment="center")
 
 with col_menu:
-    # Menu Popover Titik Tiga di Pojok Kanan Atas
     with st.popover("⋮"):
         st.caption("🌐 **Pengaturan Bahasa**")
         bahasa_terpilih = st.selectbox(
@@ -97,22 +116,19 @@ with col_menu:
             options=list(opsi_bahasa.keys()),
             label_visibility="collapsed"
         )
-        
         st.divider()
         st.caption("⚙️ **Aksi Obrolan**")
         if st.button("🗑️ Hapus Chat", use_container_width=True):
             st.session_state.messages = []
-            if "img_upload" in st.session_state:
-                del st.session_state["img_upload"]
-            if "file_upload" in st.session_state:
-                del st.session_state["file_upload"]
             st.rerun()
 
 st.divider()
 
-# 4. Inisialisasi Memori Percakapan
+# 4. Inisialisasi Memori Percakapan & State Aksi
 if "messages" not in st.session_state:
     st.session_state.messages = []
+if "menu_action" not in st.session_state:
+    st.session_state.menu_action = None
 
 # Menampilkan Riwayat Chat Ke Layar
 for msg in st.session_state.messages:
@@ -125,14 +141,7 @@ for msg in st.session_state.messages:
 def kirim_pesan():
     user_text = st.session_state.get("input_box", "").strip()
     if user_text:
-        context = ""
-        if st.session_state.get("file_upload"):
-            context += f"\n\n[File teks terlampir: {st.session_state.file_upload.name}]"
-        if st.session_state.get("img_upload"):
-            context += f"\n\n[*Mengunggah foto: {st.session_state.img_upload.name}*]"
-            
-        st.session_state.messages.append({"role": "user", "content": user_text + context})
-        
+        st.session_state.messages.append({"role": "user", "content": user_text})
         try:
             system_instruction = opsi_bahasa[bahasa_terpilih]
             history = [{"role": "system", "content": system_instruction}]
@@ -142,30 +151,38 @@ def kirim_pesan():
                 model="llama-3.1-8b-instant",
                 messages=history
             )
-            st.session_state.messages.append({"role": "assistant", "content": completion.choices[0].message.content})
+            st.session_state.messages.append({"role": "assistant", "content": completion.choices.message.content})
         except Exception as e:
             st.session_state.messages.append({"role": "assistant", "content": f"Gagal memproses: {e}"})
-        
         st.session_state["input_box"] = ""
 
-# 6. Baris Menu Aksi & Kotak Input Bawah
+# Callback untuk mengubah state tombol menu ➕
+def set_action(action_name):
+    st.session_state.menu_action = action_name
+
+# 6. PANEL KONDISIONAL UNTUK UPLOAD (Akan muncul jika menu diklik)
+if st.session_state.menu_action == "gambar":
+    st.file_uploader("🖼️ Pilih file gambar Anda (PNG, JPG):", type=["png", "jpg", "jpeg"])
+    if st.button("❌ Tutup Panel"): set_action(None); st.rerun()
+elif st.session_state.menu_action == "file":
+    st.file_uploader("📄 Pilih berkas dokumen Anda (TXT, PDF):", type=["txt", "pdf"])
+    if st.button("❌ Tutup Panel"): set_action(None); st.rerun()
+elif st.session_state.menu_action == "buat_gambar":
+    st.info("🎨 Fitur Pembuatan Gambar Diaktifkan!")
+    if st.button("❌ Tutup Panel"): set_action(None); st.rerun()
+
+# 7. Baris Menu Aksi & Kotak Input Bawah
 st.write("") 
 col_popover, col_input, col_send = st.columns([1.5, 7, 1.5], vertical_alignment="bottom")
 
 with col_popover:
     with st.popover("➕"):
-        st.caption("📎 **Upload & Lampiran**")
-        st.file_uploader("📂 Upload file teks/dokumen", type=["txt", "pdf"], key="file_upload")
-        st.file_uploader("📸 Upload gambar/foto", type=["png", "jpg", "jpeg"], key="img_upload")
+        # Tampilan menu persis seperti pada gambar rujukan Anda
+        st.button("🖼️ Upload gambar", use_container_width=True, on_click=set_action, args=("gambar",))
+        st.button("📎 Upload file", use_container_width=True, on_click=set_action, args=("file",))
         
-        st.divider()
-        st.caption("🤖 **Alat & Kreasi AI**")
-        if st.button("🎨 Buat gambar (Baru)", use_container_width=True):
-            st.toast("Fitur Canvas/Gambar siap dikembangkan!")
-        if st.button("📝 Canvas", use_container_width=True):
-            st.toast("Membuka ruang kerja Canvas...")
-        if st.button("🔍 Deep Research", use_container_width=True):
-            st.toast("Memulai analisis mendalam...")
+        st.caption("Alat")
+        st.button("🍌 Buat gambar", use_container_width=True, on_click=set_action, args=("buat_gambar",))
 
 with col_input:
     st.text_input(
