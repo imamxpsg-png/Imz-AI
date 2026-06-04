@@ -23,11 +23,11 @@ st.markdown("""
         100% { background-position: 0% 50%; }
     }
     .animated-title {
-        font-size: 38px;
+        font-size: 34px; /* Sedikit dikecilkan agar proporsional */
         font-weight: 800;
         text-align: center;
         margin-top: -20px;
-        margin-bottom: 5px;
+        margin-bottom: 20px;
         background: linear-gradient(-45deg, #ee7752, #e73c7e, #23a6d5, #23d5ab);
         background-size: 400% 400%;
         -webkit-background-clip: text;
@@ -35,19 +35,19 @@ st.markdown("""
         animation: gradientMove 8s ease infinite;
     }
     
-    /* 2. GAYA TEKS PEMBUKA DI TENGAH LAYAR */
+    /* 2. GAYA TEKS PEMBUKA DI TENGAH LAYAR (DIKECILKAN) */
     .welcome-container {
         display: flex;
         justify-content: center;
         align-items: center;
-        height: 25vh; 
+        height: 20vh; 
         text-align: center;
         margin-bottom: 10px;
     }
     .welcome-text {
-        font-size: 26px; /* Ukuran dikecilkan agar lebih elegan */
+        font-size: 20px; /* Ukuran tulisan bantuan dikecilkan sesuai permintaan */
         font-weight: 500;
-        color: #2c3e50;
+        color: #4a5568;
         line-height: 1.4;
     }
     
@@ -134,12 +134,11 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# 3. Baris Navigasi Atas dengan Efek Gerakan Judul
+# 3. Baris Atas Hanya Berisi Tulisan Imz-AI dengan Efek Gerakan Warna
 st.markdown('<h1 class="animated-title">Imz-AI</h1>', unsafe_allow_html=True)
-st.write("<p style='text-align:center; color:#777; margin-top:-10px;'>✨ <b>Mode AI</b> &nbsp;|&nbsp; Semua &nbsp;|&nbsp; Gambar &nbsp;|&nbsp; Video &nbsp;|&nbsp; Berita</p>", unsafe_allow_html=True)
 st.divider()
 
-# Pembagian kolom untuk Pengaturan Bahasa dan Tombol Hapus Chat
+# Pembagian kolom untuk Pengaturan Bahasa dan Tombol Hapus Chat (Perbaikan rasio kolom [7, 3])
 col_lang, col_clear = st.columns([7, 3], vertical_alignment="center")
 
 with col_lang:
@@ -173,6 +172,7 @@ if "messages" not in st.session_state:
 
 # Tampilan Kondisional: Selamat Datang atau Riwayat Percakapan
 if not st.session_state.messages:
+    # Menggunakan class .welcome-text yang ukurannya sudah diperkecil (20px)
     st.markdown(
         '<div class="welcome-container"><h2 class="welcome-text">Selamat datang di Imz-AI, apa ada yang bisa dibantu?</h2></div>', 
         unsafe_allow_html=True
@@ -213,11 +213,9 @@ def kirim_pesan():
 
 # 6. PENYATUAN FITUR UTAMA: 1 Bingkai Bersama (➕, Kolom Teks, 🚀)
 st.write("") 
-# Container ini diikat oleh kelas CSS .custom-input-box
 with st.container(border=False):
     st.markdown('<div class="custom-input-box">', unsafe_allow_html=True)
     
-    # Membagi area di dalam bingkai tunggal menjadi 3 kolom sejajar
     col_popover, col_input, col_send = st.columns([1.1, 7.8, 1.1], vertical_alignment="center")
     
     with col_popover:
