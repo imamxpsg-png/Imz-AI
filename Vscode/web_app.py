@@ -9,25 +9,33 @@ client = Groq(api_key=api_key)
 # 1. Konfigurasi Halaman Utama
 st.set_page_config(page_title="AI Chat UI Premium", layout="centered")
 
-# 2. Gaya CSS Kustom (Menyatukan Input Bawah & Animasi Judul)
+# 2. Gaya CSS Kustom Dioptimalkan untuk Layar HP (Mobile Optimized)
 st.markdown("""
     <style>
+    /* Mengurangi padding default Streamlit agar area chat di HP lebih luas */
+    .block-container {
+        padding-top: 2rem !important;
+        padding-bottom: 2rem !important;
+        padding-left: 1rem !important;
+        padding-right: 1rem !important;
+    }
+    
     html, body, [data-testid="stAppViewContainer"] {
         font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     }
     
-    /* 1. ANIMASI WARNA BERJALAN UNTUK JUDUL ATAS */
+    /* 1. ANIMASI JUDUL ATAS (Ukuran disesuaikan untuk HP) */
     @keyframes gradientMove {
         0% { background-position: 0% 50%; }
         50% { background-position: 100% 50%; }
         100% { background-position: 0% 50%; }
     }
     .animated-title {
-        font-size: 34px; 
+        font-size: 28px; /* Diperkecil dari 34px agar pas di layar HP */
         font-weight: 800;
         text-align: center;
-        margin-top: -20px;
-        margin-bottom: 20px;
+        margin-top: -10px;
+        margin-bottom: 10px;
         background: linear-gradient(-45deg, #ee7752, #e73c7e, #23a6d5, #23d5ab);
         background-size: 400% 400%;
         -webkit-background-clip: text;
@@ -35,110 +43,108 @@ st.markdown("""
         animation: gradientMove 8s ease infinite;
     }
     
-    /* 2. GAYA TEKS PEMBUKA DI TENGAH LAYAR */
+    /* 2. GAYA TEKS PEMBUKA (Proporsional untuk HP) */
     .welcome-container {
         display: flex;
         justify-content: center;
         align-items: center;
-        height: 20vh; 
+        height: 15vh; 
         text-align: center;
         margin-bottom: 10px;
+        padding: 0 10px;
     }
     .welcome-text {
-        font-size: 20px; 
+        font-size: 16px; /* Diperkecil ke 16px agar tidak patah berantakan di HP */
         font-weight: 500;
         color: #4a5568;
-        line-height: 1.4;
+        line-height: 1.5;
     }
     
-    /* 3. MENYATUKAN INPUT BARIS BAWAH MENJADI SATU KOTAK (BINGKAI) */
+    /* 3. BINGKAI INPUT BAWAH YANG COMPACT UNTUK HP */
     [data-testid="stVerticalBlockBorderWrapper"] .custom-input-box {
         background-color: #ffffff;
         border: 1px solid #e0e0e0;
-        border-radius: 28px;
-        padding: 10px 14px;
-        box-shadow: 0px 4px 20px rgba(0,0,0,0.06);
+        border-radius: 24px; /* Sedikit dikurangi lengkungannya agar rapi */
+        padding: 6px 10px;  /* Padding dipersempit agar hemat ruang */
+        box-shadow: 0px 4px 15px rgba(0,0,0,0.05);
     }
     
-    /* Menghilangkan border bawaan asli input teks agar menyatu bersih */
+    /* Menghilangkan border input bawaan asli */
     div[data-testid="stTextInput"] input {
         border: none !important;
         box-shadow: none !important;
         background-color: transparent !important;
-        padding-left: 5px !important;
-        font-size: 16px !important;
-        height: 42px !important;
+        padding-left: 2px !important;
+        font-size: 15px !important; /* Ukuran teks input standar HP */
+        height: 38px !important;
     }
     
-    /* Tombol Popover Plus Mini Transparan */
+    /* Tombol Popover Plus Lingkaran Mini */
     div[data-testid="stPopover"] > button {
         border-radius: 50% !important;
         background-color: #f1f3f4 !important;
         color: #333333 !important;
         border: none !important;
-        height: 42px !important;
-        width: 42px !important;
-        min-width: 42px !important;
-        max-width: 42px !important;
+        height: 36px !important; /* Diperkecil dari 42px agar pas di jempol */
+        width: 36px !important;
+        min-width: 36px !important;
+        max-width: 36px !important;
         padding: 0 !important;
         box-shadow: none !important;
     }
-    div[data-testid="stPopover"] > button:hover {
-        background-color: #e8eaed !important;
-    }
 
-    /* Tombol Kirim Bundar Mini */
+    /* Tombol Kirim 🚀 Mini */
     div.stButton > button[key="send_btn"] {
         background: linear-gradient(135deg, #1a73e8 0%, #1557b0 100%) !important;
         color: white !important;
         border-radius: 50% !important;
         border: none !important;
-        height: 42px !important;
-        width: 42px !important;
-        min-width: 42px !important;
-        max-width: 42px !important;
+        height: 36px !important; /* Diperkecil menyesuaikan tombol plus */
+        width: 36px !important;
+        min-width: 36px !important;
+        max-width: 36px !important;
         padding: 0 !important;
         display: flex !important;
         align-items: center !important;
         justify-content: center !important;
-        box-shadow: 0px 2px 6px rgba(26, 115, 232, 0.3) !important;
+        box-shadow: 0px 2px 5px rgba(26, 115, 232, 0.2) !important;
     }
 
-    /* Bubble Chat */
+    /* Bubble Chat Responsif HP */
     .bubble-user {
         background-color: #f0f4f9;
-        padding: 14px 18px;
-        border-radius: 18px 18px 0px 18px;
-        margin-bottom: 12px;
-        max-width: 85%;
+        padding: 10px 14px;
+        border-radius: 16px 16px 0px 16px;
+        margin-bottom: 10px;
+        max-width: 90%; /* Diperlebar sedikit agar menampung teks lebih banyak di layar sempit */
         margin-left: auto;
         color: #202124;
+        font-size: 15px;
     }
     .bubble-ai {
         background-color: #ffffff;
-        padding: 14px 18px;
-        border-radius: 18px 18px 18px 0px;
-        margin-bottom: 12px;
-        max-width: 85%;
+        padding: 10px 14px;
+        border-radius: 16px 16px 16px 0px;
+        margin-bottom: 10px;
+        max-width: 90%;
         border: 1px solid #e3e3e3;
         color: #202124;
+        font-size: 15px;
     }
     
-    /* Tombol Hapus Chat Merah di dalam Popover */
+    /* Tombol Hapus Chat di dalam Popover */
     div.stButton > button[key="clear_btn"] {
         background-color: #ff4b4b !important;
         color: white !important;
         border-radius: 10px;
         border: none;
         width: 100%;
-    }
-    div.stButton > button[key="clear_btn"]:hover {
-        background-color: #d93838 !important;
+        padding: 8px !important;
     }
     </style>
 """, unsafe_allow_html=True)
 
-# 3. Baris Atas Hanya Berisi Tulisan Imz-AI dengan Efek Gerakan Warna
+# 3. Baris Atas Hanya Berisi Tulisan Imz-AI
 st.markdown('<h1 class="animated-title">Imz-AI</h1>', unsafe_allow_html=True)
 st.divider()
 
@@ -160,7 +166,7 @@ if "bahasa_sekarang" not in st.session_state:
 # Tampilan Kondisional: Selamat Datang atau Riwayat Percakapan
 if not st.session_state.messages:
     st.markdown(
-        '<div class="welcome-container"><h2 class="welcome-text">Selamat datang di Imz-AI, apa ada yang bisa dibantu?</h2></div>', 
+        '<div class="welcome-container"><p class="welcome-text">Selamat datang di Imz-AI, <br>apa ada yang bisa dibantu?</p></div>', 
         unsafe_allow_html=True
     )
 else:
@@ -183,7 +189,6 @@ def kirim_pesan():
         st.session_state.messages.append({"role": "user", "content": user_text + context})
         
         try:
-            # Menggunakan bahasa dari session_state yang dipilih di dalam popover
             system_instruction = opsi_bahasa[st.session_state.bahasa_sekarang]
             history = [{"role": "system", "content": system_instruction}]
             history.extend([{"role": m["role"], "content": m["content"]} for m in st.session_state.messages])
@@ -198,7 +203,6 @@ def kirim_pesan():
         
         st.session_state["input_box"] = ""
 
-# Fungsi untuk menghapus riwayat chat
 def hapus_obrolan():
     st.session_state.messages = []
     if "img_upload" in st.session_state:
@@ -206,12 +210,13 @@ def hapus_obrolan():
     if "file_upload" in st.session_state:
         del st.session_state["file_upload"]
 
-# 6. PENYATUAN FITUR UTAMA: 1 Bingkai Bersama (＋, Kolom Teks, 🚀)
+# 6. BINGKAI UTAMA: Rasio Lebar Kolom Dioptimalkan untuk HP ([1.5, 7.0, 1.5])
 st.write("") 
 with st.container(border=False):
     st.markdown('<div class="custom-input-box">', unsafe_allow_html=True)
     
-    col_popover, col_input, col_send = st.columns([1.1, 7.8, 1.1], vertical_alignment="center")
+    # Rasio kolom disesuaikan agar kotak ketik teks tetap luas di layar HP yang sempit
+    col_popover, col_input, col_send = st.columns([1.5, 7.0, 1.5], vertical_alignment="center")
     
     with col_popover:
         with st.popover("＋"):
@@ -222,11 +227,10 @@ with st.container(border=False):
             st.divider()
             st.caption("🎨 **Alat Tambahan**")
             if st.button("Buat gambar", use_container_width=True):
-                st.toast("Fitur pembuatan gambar siap dikonfigurasi!")
+                st.toast("Fitur pembuatan gambar aktif!")
                 
             st.divider()
             st.caption("🌐 **Pengaturan Bahasa**")
-            # Pilih bahasa sekarang disimpan langsung ke session_state agar tidak ter-reset
             st.session_state.bahasa_sekarang = st.selectbox(
                 "Pilih Bahasa Respon AI:",
                 options=list(opsi_bahasa.keys()),
@@ -235,7 +239,6 @@ with st.container(border=False):
             )
             
             st.divider()
-            # Tombol hapus chat diletakkan di bagian paling bawah popover
             st.button("🗑️ Hapus Chat", key="clear_btn", on_click=hapus_obrolan)
 
     with col_input:
