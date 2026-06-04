@@ -23,7 +23,7 @@ st.markdown("""
         100% { background-position: 0% 50%; }
     }
     .animated-title {
-        font-size: 34px; /* Sedikit dikecilkan agar proporsional */
+        font-size: 34px; 
         font-weight: 800;
         text-align: center;
         margin-top: -20px;
@@ -35,7 +35,7 @@ st.markdown("""
         animation: gradientMove 8s ease infinite;
     }
     
-    /* 2. GAYA TEKS PEMBUKA DI TENGAH LAYAR (DIKECILKAN) */
+    /* 2. GAYA TEKS PEMBUKA DI TENGAH LAYAR */
     .welcome-container {
         display: flex;
         justify-content: center;
@@ -45,7 +45,7 @@ st.markdown("""
         margin-bottom: 10px;
     }
     .welcome-text {
-        font-size: 20px; /* Ukuran tulisan bantuan dikecilkan sesuai permintaan */
+        font-size: 20px; 
         font-weight: 500;
         color: #4a5568;
         line-height: 1.4;
@@ -124,12 +124,16 @@ st.markdown("""
         color: #202124;
     }
     
+    /* Tombol Hapus Chat Merah di dalam Popover */
     div.stButton > button[key="clear_btn"] {
         background-color: #ff4b4b !important;
         color: white !important;
         border-radius: 10px;
         border: none;
         width: 100%;
+    }
+    div.stButton > button[key="clear_btn"]:hover {
+        background-color: #d93838 !important;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -138,41 +142,23 @@ st.markdown("""
 st.markdown('<h1 class="animated-title">Imz-AI</h1>', unsafe_allow_html=True)
 st.divider()
 
-# Pembagian kolom untuk Pengaturan Bahasa dan Tombol Hapus Chat (Perbaikan rasio kolom [7, 3])
-col_lang, col_clear = st.columns([7, 3], vertical_alignment="center")
+# Kamus bahasa beserta instruksi sistem untuk AI
+opsi_bahasa = {
+    "Bahasa Indonesia 🇮🇩": "Anda adalah asisten AI ramah yang wajib menjawab dalam Bahasa Indonesia.",
+    "English 🇺🇸": "You are a helpful AI assistant. You must respond strictly in English.",
+    "Japanese 🇯🇵": "あなたは親切なAIアシスタントです。必ず日本語で答えてください。",
+    "Korean 🇰🇷": "당신은 친절한 AI 어시스턴트입니다. 반드시 한국어로 답변해 주세요.",
+    "Chinese 🇨🇳": "你是一个友好的AI助手。请务必用中文回答。"
+}
 
-with col_lang:
-    opsi_bahasa = {
-        "Bahasa Indonesia 🇮🇩": "Anda adalah asisten AI ramah yang wajib menjawab dalam Bahasa Indonesia.",
-        "English 🇺🇸": "You are a helpful AI assistant. You must respond strictly in English.",
-        "Japanese 🇯🇵": "あなたは親切なAIアシスタントです。必ず日本語で答えてください。",
-        "Korean 🇰🇷": "당신은 친절한 AI 어시스턴트입니다. 반드시 한국어로 답변해 주세요.",
-        "Chinese 🇨🇳": "你是一个友好的AI助手。请务必用中文回答。"
-    }
-    bahasa_terpilih = st.selectbox(
-        "🌐 Pilih Bahasa Respon AI:",
-        options=list(opsi_bahasa.keys()),
-        label_visibility="collapsed"
-    )
-
-with col_clear:
-    if st.button("🗑️ Hapus Chat", key="clear_btn"):
-        st.session_state.messages = []
-        if "img_upload" in st.session_state:
-            del st.session_state["img_upload"]
-        if "file_upload" in st.session_state:
-            del st.session_state["file_upload"]
-        st.rerun()
-
-st.write("---")
-
-# 4. Inisialisasi Memori Percakapan
+# 4. Inisialisasi Memori Percakapan & State Bahasa
 if "messages" not in st.session_state:
     st.session_state.messages = []
+if "bahasa_sekarang" not in st.session_state:
+    st.session_state.bahasa_sekarang = "Bahasa Indonesia 🇮🇩"
 
 # Tampilan Kondisional: Selamat Datang atau Riwayat Percakapan
 if not st.session_state.messages:
-    # Menggunakan class .welcome-text yang ukurannya sudah diperkecil (20px)
     st.markdown(
         '<div class="welcome-container"><h2 class="welcome-text">Selamat datang di Imz-AI, apa ada yang bisa dibantu?</h2></div>', 
         unsafe_allow_html=True
@@ -197,7 +183,8 @@ def kirim_pesan():
         st.session_state.messages.append({"role": "user", "content": user_text + context})
         
         try:
-            system_instruction = opsi_bahasa[bahasa_terpilih]
+            # Menggunakan bahasa dari session_state yang dipilih di dalam popover
+            system_instruction = opsi_bahasa[st.session_state.bahasa_sekarang]
             history = [{"role": "system", "content": system_instruction}]
             history.extend([{"role": m["role"], "content": m["content"]} for m in st.session_state.messages])
             
@@ -211,7 +198,15 @@ def kirim_pesan():
         
         st.session_state["input_box"] = ""
 
-# 6. PENYATUAN FITUR UTAMA: 1 Bingkai Bersama (➕, Kolom Teks, 🚀)
+# Fungsi untuk menghapus riwayat chat
+def hapus_obrolan():
+    st.session_state.messages = []
+    if "img_upload" in st.session_state:
+        del st.session_state["img_upload"]
+    if "file_upload" in st.session_state:
+        del st.session_state["file_upload"]
+
+# 6. PENYATUAN FITUR UTAMA: 1 Bingkai Bersama (＋, Kolom Teks, 🚀)
 st.write("") 
 with st.container(border=False):
     st.markdown('<div class="custom-input-box">', unsafe_allow_html=True)
@@ -223,9 +218,25 @@ with st.container(border=False):
             st.caption("📂 **Lampiran & Alat**")
             st.file_uploader("🖼️ Upload gambar", type=["png", "jpg", "jpeg"], key="img_upload")
             st.file_uploader("📄 Upload file", type=["txt", "pdf"], key="file_upload")
+            
             st.divider()
-            if st.button("🎨 Buat gambar", use_container_width=True):
+            st.caption("🎨 **Alat Tambahan**")
+            if st.button("Buat gambar", use_container_width=True):
                 st.toast("Fitur pembuatan gambar siap dikonfigurasi!")
+                
+            st.divider()
+            st.caption("🌐 **Pengaturan Bahasa**")
+            # Pilih bahasa sekarang disimpan langsung ke session_state agar tidak ter-reset
+            st.session_state.bahasa_sekarang = st.selectbox(
+                "Pilih Bahasa Respon AI:",
+                options=list(opsi_bahasa.keys()),
+                index=list(opsi_bahasa.keys()).index(st.session_state.bahasa_sekarang),
+                label_visibility="collapsed"
+            )
+            
+            st.divider()
+            # Tombol hapus chat diletakkan di bagian paling bawah popover
+            st.button("🗑️ Hapus Chat", key="clear_btn", on_click=hapus_obrolan)
 
     with col_input:
         st.text_input(
